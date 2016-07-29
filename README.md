@@ -3,15 +3,15 @@ Generate dataset of problems like the [Regex Golf game](http://regex.alf.nu/). T
 
 # dependency
 [regldg](https://regldg.com/)
+and
+[char_rnn](https://github.com/karpathy/char-rnn) for trying to learn
+
+# compile
 ```
 wget https://regldg.com/regldg-1.0.0.tar.gz
 tar -zxvf regldg-1.0.0.tar.gz
 cd regldg-1.0.0
 make
-```
-
-# compile
-```
 g++ rand_text_generator.cpp -o rand_text_generator.bin
 ```
 
