@@ -2,9 +2,7 @@
 Generate dataset of problems like the [Regex Golf game](http://regex.alf.nu/). This allows training RNNs to play regex golf.
 
 # dependency
-[regldg](https://regldg.com/)
-and
-[char_rnn](https://github.com/karpathy/char-rnn) for trying to learn
+[regldg](https://regldg.com/), and [torch-rnn](https://github.com/jcjohnson/torch-rnn) for trying to learn
 
 # compile
 ```
@@ -27,12 +25,13 @@ g++ rand_text_generator.cpp -o rand_text_generator.bin
 
 # create entire dataset
 ```
-while read regex; do ./rand_text_generator.bin 4 $regex; echo SOLUTION: $regex; done< <(./regldg '--max-length=8' '--readable-output' '--num-words-output=1000000' "[a-z]{3}" | shuf | head -10000) > foo_dataset
+while read regex; do ./rand_text_generator.bin 4 $regex; echo SOLUTION: $regex; done< <(./regldg '--max-length=8' '--readable-output' '--num-words-output=1000000' "[a-z]{3}" | shuf | head -17576) > foo_dataset
 ```
 
-# train with [char_rnn](https://github.com/karpathy/char-rnn)
+# train with [torch-rnn](https://github.com/jcjohnson/torch-rnn)
 ```
-th train.lua -checkpoint_every 10000 -max_epochs 25000 -dropout 0.5 -seq_length 40 -num_layers 2 -batch_size 1000 -input_h5 my_data.h5 -input_json my_data.json
+python scripts/preprocess.py --input_txt foo_dataset --output_h5 regex_data.h5 --output_json regex_data.json
+th train.lua -checkpoint_every 10000 -max_epochs 25000 -dropout 0.5 -seq_length 40 -num_layers 2 -batch_size 1000 -input_h5 regex_data.h5 -input_json regex_data.json
 ```
 
 Because the network doesn't learn, it shows that RNNs do not learn rules which are not character-specific
