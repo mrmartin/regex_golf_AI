@@ -1,0 +1,105 @@
+regex to match all regexes:
+/
+^                                             # start of string
+(                                             # first group start
+  (?:
+    (?:[^?+*{}()[\]\\|]+                      # literals and ^, $
+     | \\.                                    # escaped characters
+     | \[ (?: \^?\\. | \^[^\\] | [^\\^] )     # character classes
+          (?: [^\]\\]+ | \\. )* \]
+     | \( (?:\?[:=!]|\?<[=!]|\?>)? (?1)?? \)  # parenthesis, with recursive content
+     | \(\? (?:R|[+-]?\d+) \)                 # recursive matching
+     )
+    (?: (?:[?+*]|\{\d+(?:,\d*)?\}) [?+]? )?   # quantifiers
+  | \|                                        # alternative
+  )*                                          # repeat content
+)                                             # end first group
+$                                             # end of string
+/
+
+one line:
+/^((?:(?:[^?+*{}()[\]\\|]+|\\.|\[(?:\^?\\.|\^[^\\]|[^\\^])(?:[^\]\\]+|\\.)*\]|\((?:\?[:=!]|\?<[=!]|\?>)?(?1)??\)|\(\?(?:R|[+-]?\d+)\))(?:(?:[?+*]|\{\d+(?:,\d*)?\})[?+]?)?|\|)*)$/
+
+best solutions to regex golf:
+foo
+k$
+^[a-f]*$
+(...).*\1
+^(?!.*(.)\1)|ef
+^(.)[^p].*\1$
+^(?!(..+)\1+$)
+(.)(.\1){3}
+^.{5}[^e]?$
+00($|3|6|9|12|15)|4.2|.1.+4|55|.17
+ai|c$|^p|[bcnrw][bnopr]
+.{37}|^(<(..(?!<.>$))*>)*$
+^(?!(.(..)+)\1*$)
+((.+)0\2+1){8}
+.r.{32}r|a.{10}te|n.n..
+^(?!((xxx)+x|xx|)\1*$)
+^(.+)(.+) - \1 = \2$
+^[adresbtcfxzgvw]+$
+
+A : The power of machine learning is that
+1)we write an algorithm
+2)we show it a problem, and a solution
+3)it learns to solve a new problem
+
+B : In order to achieve artificial intelligence, one approach would be to reformulate this setup as follows
+1)we write an algorithm
+2)we show it a problem, and a method to interact with relevant information
+3)it learns to solve this problem
+
+C : Or, alternatively
+1)we write an algorithm
+2)we show it a problem, and a solution
+3)it learns to solve different problems
+
+Approach C is problematic, because there is no clear line between "different problem" and "different instance of the same problem". If this can be made clear, approach C will be superior to approach B. In the meantime, approach B implicitly learns to interact with relevant information, which can be used in entirely different scenarios. Thus, approach B can be seen as yielding intelligence.
+
+Write scripts to generate the entire class of regex-golf-like problems, one for each problem
+foo:
+./regldg '--max-length=8' '--readable-output' '--num-words-output=1000' "[a-z]{3}" | shuf | head
+
+f.o:
+./regldg '--universe-set=255' '--max-length=8' '--readable-output' '--num-words-output=10000' "\.[a-z]{2}|[a-z]\.[a-z]|[a-z]{2}\." | shuf | head
+
+k$:
+./regldg '--debug-code=1' '--universe-set=15' '--universe-checking=3' '--readable-output' '--num-words-output=100000' "[a-z]$" | shuf | head
+
+^[a-f]*$: (not very good, because this isn't allowed: "^\[([a-z])-[\1-z]\]\*$")
+./regldg '--debug-code=1' '--universe-set=255' '--universe-checking=3' '--readable-output' '--num-words-output=1000' "^\[[a-m]-[n-z]\]\*$" | shuf | head
+
+(...).*\1:
+./regldg '--debug-code=1' '--universe-set=255' '--universe-checking=3' '--readable-output' '--max-length=15' '--num-words-output=1000' "^?\\\\\(\.[\.]*\\\\\)\.[\.]*\\\\1\$?" | shuf | head
+
+These generate patterns. Each such pattern can be used with
+grep "^\(...\)..\1" words.txt | shuf | head
+to generate positives, and
+grep -v "^\(...\)..\1" words.txt | shuf | head
+for negatives
+
+The regex golf generator is born!
+
+Use this command to generate the dataset
+while read regex; do if [ 10 -eq `grep "$regex" words.txt | shuf | head | wc -l` ]; then grep "$regex" words.txt | shuf | head; echo "REGEX: $regex"; fi; done< <(./regldg '--universe-set=255' '--max-length=8' '--readable-output' '--num-words-output=10000' "\.[a-z]{2}|[a-z]\.[a-z]|[a-z]{2}\." | shuf | head -1000) > f.o_dataset
+
+while read regex; do if [ 7 -eq `grep "$regex" words.txt | shuf | head -7 | wc -l` ]; then grep "$regex" words.txt | shuf | head -7; echo "REGEX: $regex"; fi; done< <(./regldg '--universe-set=255' '--max-length=8' '--readable-output' '--num-words-output=1000000' "[a-z]{3}" | shuf) > foo_dataset
+wc -l foo_dataset
+50568
+
+the dataset is small, and there is really no need for genuine words. Repeat with arbitrary words
+./rand_text_generator.bin 4 foo
+
+
+This uniquely contains all usable three letter regexes. Repeating them would yield the same as repeatedly looking at the batches, which is done in training without wasting RAM
+
+proprocess with
+python scripts/preprocess.py --input_txt ../../Experiments/regex_golf_AI/foo_dataset --output_h5 my_data.h5 --output_json my_data.json
+train with
+th train.lua -max_epochs 2500 -num_layers 2 -batch_size 1000 -input_h5 my_data.h5 -input_json my_data.json
+
+-checkpoint_name doesn't work
+
+run overnight with:
+th train.lua -checkpoint_every 10000 -max_epochs 25000 -dropout 0.5 -seq_length 40 -num_layers 2 -batch_size 1000 -input_h5 my_data.h5 -input_json my_data.json
